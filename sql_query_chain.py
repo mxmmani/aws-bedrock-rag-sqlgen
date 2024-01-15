@@ -32,7 +32,7 @@ opensearch_client = OpenSearch(
     http_auth=awsauth,
     connection_class=RequestsHttpConnection    
 )
-print('Client initialized')
+print('<sql_query_chain> Client initialized as follows:')
 print(opensearch_client)
 
 # Function to convert Document to a dictionary
@@ -57,7 +57,7 @@ def index_documents(docs):
             index=index_name, 
             body=document_to_dict(doc)
         )
-        print('Document added:', response)
+        print('<sql_query_chain> Document added:', response)
         
 # Replace vectorstore_retriever with OpenSearch Query Function
 def opensearch_retriever(query, index_name="empindex", search_kwargs={"size": 1}):
@@ -74,13 +74,13 @@ def opensearch_retriever(query, index_name="empindex", search_kwargs={"size": 1}
     )
     return response['hits']['hits']
 
-embeddings_model_id = "amazon.titan-embed-text-v1"
+#embeddings_model_id = "amazon.titan-embed-text-v1"
 credentials_profile_name = "default"
 
-bedrock_embedding = BedrockEmbeddings(
-    credentials_profile_name=credentials_profile_name,
-    model_id=embeddings_model_id
-)
+#bedrock_embedding = BedrockEmbeddings(
+#    credentials_profile_name=credentials_profile_name,
+#    model_id=embeddings_model_id
+#)
 
 anthropic_claude_llm = Bedrock(
     credentials_profile_name=credentials_profile_name,
@@ -89,10 +89,9 @@ anthropic_claude_llm = Bedrock(
 
 TEMPLATE = """You are an MSSQL expert and have great knowledge of Employee Attendance System!
 Given an input question, first create a syntactically correct MSSQL query to run and then return the query.
-Make sure to use only existing columns and tables. 
-Try to inlcude EmployeeName column in the query instead of EmployeeID. 
+Make sure to use only existing columns and tables from the Context file. 
 Do not wrap table names with square brackets and make sure to end queries with ;.
-Ensure that the query is syntactically correct and use the best of your knowledge. If you cannot form a query, just say no.
+Ensure that the query is syntactically correct and use the best of your knowledge. Do not Hallucinate!
 Use the following format:
 
 Question: "Question here"
@@ -127,16 +126,15 @@ custom_prompt_template = PromptTemplate(
     input_variables=["context", "question"], template=TEMPLATE
 )
 
-print('Template initialized')
+print('\n<sql_query_chain> Template initialized: '+TEMPLATE)
 
 # Load the DDL document and split it into chunks
 loader = TextLoader("employee_ddl.sql")
 documents = loader.load()
 
-print('Loader initialized')
+print('\n<sql_query_chain> Loaded the DDL document: ')
 print(loader)
 print(documents)
-
 
 # Split document into chunks
 text_splitter = RecursiveCharacterTextSplitter(
@@ -144,15 +142,13 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 docs = text_splitter.split_documents(documents)
 
-print('Splitting initialized')
+print('\n<sql_query_chain> Splitting into Chunks: ')
 print(text_splitter)
 print(docs)
 
 # Convert documents to dictionary and Index them into OpenSearch
 index_documents(docs)
-print('Indexing Completed')
-
-
+print('\n<sql_query_chain> Indexing Completed')
 
 model = anthropic_claude_llm
 prompt = ChatPromptTemplate.from_template(TEMPLATE)
@@ -161,7 +157,7 @@ prompt = ChatPromptTemplate.from_template(TEMPLATE)
 def sql_chain(question):
     chain = (
         {
-            "context": opensearch_retriever,  # Use OpenSearch retriever
+            "context": opensearch_retriever,  
             "question": RunnablePassthrough()
         }
         | prompt
@@ -169,4 +165,3 @@ def sql_chain(question):
         | StrOutputParser()
     )
     return chain.invoke(question)
-    

@@ -19,19 +19,30 @@ def is_query_present(response):
     pattern = r'\bSQLQuery:\s*(.+)'
     return re.search(pattern, response, re.IGNORECASE | re.DOTALL)
 
+#def extract_query(response):
+#    query_text = ""
+#    pattern = r'\bSQLQuery:\s*(SELECT .+)'  # Adjusted regex pattern to capture only SELECT queries
+#    match = re.search(pattern, response, re.IGNORECASE | re.DOTALL)
+#    if match:
+#        query_text = match.group(1).strip()  # Extracts only the SQL query
+#    return query_text
+
 def extract_query(response):
     query_text = ""
-    pattern = r'\bSQLQuery:\s*(SELECT .+)'  # Adjusted regex pattern to capture only SELECT queries
+    # Adjusted regex pattern to capture SELECT queries ending with a semicolon
+    pattern = r'\bSQLQuery:\s*(SELECT .+?;)'  
     match = re.search(pattern, response, re.IGNORECASE | re.DOTALL)
     if match:
-        query_text = match.group(1).strip()  # Extracts only the SQL query
+        query_text = match.group(1).strip()  # Extracts only the SQL query up to the semicolon
     return query_text
-
 
 def run_query(query):
     try:
         logging.info(query)  # Log only the query
         status, columns, query_result = mssql_helper.run_query(query)
+        print('\n<start_chat_ui> Query Result and Status!!! ')
+        print(query_result)
+        print(status)
         if query_result and status == "success":
             df = pd.DataFrame(query_result, columns=columns)
             return df
@@ -62,6 +73,8 @@ for message in st.session_state.messages:
             st.markdown(message["content"])
 
 prompt = st.chat_input("Write your question")
+print ('\n<sql_chat_ui> Prompt: ')
+print(prompt)
 
 if prompt:
      # Add user message to chat history
@@ -76,18 +89,30 @@ if prompt:
         response_list = []
         response = ask_question(prompt)
         response_list.append(response)
+        
+        print ('\n<sql_chat_ui> Response: ')
+        print(response)
+        print ('\n<sql_chat_ui> Response List: ')
+        print(response_list)
 
         for response in response_list:
             full_response += response
             message_placeholder.code(full_response + "▌", language="sql")
         message_placeholder.code(full_response, language="sql")
     
+        print('\n<sql_chat_ui> Full Response: ')
+        print(full_response)
+    
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         if is_query_present(response):
             query = extract_query(response)
+            print('\n<sql_chat_ui> Extracted Query: ')
+            print(query)
             if query:
                df = run_query(query=query)
+               print('\n<sql_chat_ui> Query Response: ')
+               print(df)
                if df is not None and not df.empty:
                    message_placeholder.dataframe(df)
     

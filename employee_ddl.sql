@@ -1,9 +1,7 @@
----
---- drop tables
----
-DROP TABLE [dbo].[EmployeeAbsence];
+-- Database
+CREATE DATABASE employeedb;
 --
--- Name: EmployeeAbsence; Type: TABLE; Schema: public; Owner: -; Tablespace:
+-- Name: EmployeeAbsence; Type: TABLE; Schema: public; Owner: employeedb; Tablespace:
 --
 CREATE TABLE EmployeeAbsence 
 (
