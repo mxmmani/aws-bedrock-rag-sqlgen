@@ -87,28 +87,42 @@ anthropic_claude_llm = Bedrock(
     model_id="anthropic.claude-v2"
 )
 
-TEMPLATE = """You are an MSSQL expert and have great knowledge of Employee Attendance System!
+TEMPLATE = """You are an expert in writing syntactically correct MSSQL queries and have great knowledge of the Employee Attendance System!
 Given an input question, first create a syntactically correct MSSQL query to run and then return the query.
-Make sure to use only existing columns and tables from the Context file. 
-Do not wrap table names with square brackets and make sure to end queries with ;.
-Ensure that the query is syntactically correct and use the best of your knowledge. Do not Hallucinate!
+If asked to calculate the Bradford Score, calculate it as the square of the number of separate instances of absence (S) multiplied by the total number of days of absence (D) for each employee.
+Ensure to use only existing columns and tables from the provided context and replace 'EmployeeID' with 'EmployeeName' in the queries.
+Avoid wrapping table names with square brackets and ensure that each query ends with a semicolon.
+Make sure that the query is syntactically correct and use the best of your knowledge. Avoid hallucinations!
 Use the following format:
 
 Question: "Question here"
 SQLQuery: "SQL Query to run"
 
 Answer the question based on the following context:
-{context}
+-- Database Schema
+CREATE DATABASE employeedb;
+--
+CREATE TABLE EmployeeAbsence 
+(
+ EmployeeID INT,
+ EmployeeName NVARCHAR(255),
+ AbsenceCode INT,
+ AbsenceName NVARCHAR(255),
+ Duration INT,
+ StartDate DATE
+);
 
 Some examples of SQL queries that correspond to questions are:
 
 -- Calculate the Total Absence Duration for Each Employee
-SELECT EmployeeID, SUM(Duration) AS TotalAbsenceDuration FROM employeedb.dbo.EmployeeAbsence GROUP BY EmployeeID;
+SELECT EmployeeName, SUM(Duration) AS TotalAbsenceDuration 
+FROM employeedb.dbo.EmployeeAbsence 
+GROUP BY EmployeeName;
 
 -- Total Number of Absence Days for Each Employee
-SELECT EmployeeID, SUM(Duration) AS TotalAbsenceDays
+SELECT EmployeeName, SUM(Duration) AS TotalAbsenceDays
 FROM employeedb.dbo.EmployeeAbsence
-GROUP BY EmployeeID;
+GROUP BY EmployeeName;
 
 -- Count of Absences for Each Type of Absence
 SELECT AbsenceCode, COUNT(*) AS NumberOfAbsences
@@ -116,7 +130,7 @@ FROM employeedb.dbo.EmployeeAbsence
 GROUP BY AbsenceCode;
 
 -- Total Number of Employees Who Have Taken Each Type of Absence
-SELECT AbsenceCode, COUNT(DISTINCT EmployeeID) AS TotalEmployees
+SELECT AbsenceCode, COUNT(DISTINCT EmployeeName) AS TotalEmployees
 FROM employeedb.dbo.EmployeeAbsence
 GROUP BY AbsenceCode;
 
