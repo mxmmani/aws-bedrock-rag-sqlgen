@@ -183,9 +183,6 @@ def get_model_response(model_input):
     descriptive_response = model_response if isinstance(model_response, str) else "No descriptive response generated."
 
     return descriptive_response
-
-
-
     
 # Define the sql_chain function
 def sql_chain(question):
